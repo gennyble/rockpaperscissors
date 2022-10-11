@@ -7,3 +7,7 @@ edition = "2021"
 
 [dependencies]
 smitten = { path = "../smitten" }
+
+[dependencies.rand]
+version = "0.8.5"
+features = ["std", "std_rng"]
