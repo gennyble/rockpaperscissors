@@ -1,5 +1,3 @@
-use std::cell::Cell;
-
 use rand::{thread_rng, Rng};
 
 pub struct RevolvingRandom {

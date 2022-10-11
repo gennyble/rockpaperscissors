@@ -1,6 +1,6 @@
 mod revolvingrandom;
 
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 use rand::{thread_rng, Rng};
 use smitten::{self, Color, Smitten, Vec2};
@@ -85,25 +85,8 @@ impl World {
 			}
 		};
 
-		// Do some jiggle 🥺
-		// We can't use foreach_entities_mut here because I want self.revovle
-		// and I need a &mut on that, too, and the compiler doesn't know that
-		// the former only uses rock, paper, and scissors. It's protecting us
-		// here. From the crime of two mutable borrows
-		self.things.iter_mut().for_each(|e| {
-			let jitter = 0.05;
-			e.position += Vec2::new(
-				self.revolve.range(-jitter, jitter),
-				self.revolve.range(-jitter, jitter),
-			)
-		});
-
-		self.things.iter_mut().for_each(|e| {
-			e.position += e.direction * Entity::SPEED * delta.as_secs_f32();
-		});
-
 		self.collide_walls();
-		self.collide_entities();
+		self.tick_entities(delta);
 	}
 
 	const ENTITY_DIM: Vec2 = Vec2 { x: 1.0, y: 1.0 };
@@ -156,9 +139,23 @@ impl World {
 		})
 	}
 
-	fn collide_entities(&mut self) {
-		let mut seen = vec![];
+	fn tick_entities(&mut self, delta: Duration) {
+		// First things first, we gotta move these things
+		self.things.iter_mut().for_each(|e| {
+			e.position += e.direction * Entity::SPEED * delta.as_secs_f32();
+		});
 
+		// Second, do some jiggle 🥺
+		self.things.iter_mut().for_each(|e| {
+			let jitter = 0.05;
+			e.position += Vec2::new(
+				self.revolve.range(-jitter, jitter),
+				self.revolve.range(-jitter, jitter),
+			)
+		});
+
+		// We can't mutate two things at once, so we do this stuff
+		let mut seen = vec![];
 		loop {
 			let mut thing = match self.things.pop() {
 				Some(thing) => thing,
@@ -166,31 +163,34 @@ impl World {
 			};
 
 			for th in self.things.iter_mut() {
-				if thing.collides_with(th) {
-					match thing.kind {
-						Kind::Rock => match th.kind {
-							Kind::Rock => (),
-							Kind::Paper => thing.kind = Kind::Paper,
-							Kind::Scissors => th.kind = Kind::Rock,
-						},
-						Kind::Paper => match th.kind {
-							Kind::Rock => th.kind = Kind::Paper,
-							Kind::Paper => (),
-							Kind::Scissors => thing.kind = Kind::Scissors,
-						},
-						Kind::Scissors => match th.kind {
-							Kind::Rock => thing.kind = Kind::Rock,
-							Kind::Paper => th.kind = Kind::Scissors,
-							Kind::Scissors => (),
-						},
-					}
-				}
+				Self::collide_entities(&mut thing, th)
 			}
 
 			seen.push(thing);
 		}
-
 		self.things = seen;
+	}
+
+	fn collide_entities(a: &mut Entity, b: &mut Entity) {
+		if a.collides_with(b) {
+			match a.kind {
+				Kind::Rock => match b.kind {
+					Kind::Rock => (),
+					Kind::Paper => a.kind = Kind::Paper,
+					Kind::Scissors => b.kind = Kind::Rock,
+				},
+				Kind::Paper => match b.kind {
+					Kind::Rock => b.kind = Kind::Paper,
+					Kind::Paper => (),
+					Kind::Scissors => a.kind = Kind::Scissors,
+				},
+				Kind::Scissors => match b.kind {
+					Kind::Rock => a.kind = Kind::Rock,
+					Kind::Paper => b.kind = Kind::Scissors,
+					Kind::Scissors => (),
+				},
+			}
+		}
 	}
 }
 
