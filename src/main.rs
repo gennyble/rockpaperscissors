@@ -1,7 +1,11 @@
+mod revolvingrandom;
+
 use std::time::Instant;
 
 use rand::{thread_rng, Rng};
 use smitten::{self, Color, Smitten, Vec2};
+
+use revolvingrandom::RevolvingRandom;
 
 const ROCK_COLOR: Color = Color::grey(0.5);
 const PAPER_COLOR: Color = Color::rgb(0.7, 0.7, 0.4);
@@ -22,6 +26,7 @@ struct World {
 	paper: Vec<Entity>,
 	scissors: Vec<Entity>,
 	earlier: Option<Instant>,
+	revolve: RevolvingRandom,
 }
 
 impl World {
@@ -73,6 +78,7 @@ impl World {
 			paper,
 			scissors,
 			earlier: None,
+			revolve: RevolvingRandom::new(),
 		}
 	}
 
@@ -92,6 +98,23 @@ impl World {
 				delta
 			}
 		};
+
+		// Do some jiggle 🥺
+		// We can't use foreach_entities_mut here because I want self.revovle
+		// and I need a &mut on that, too, and the compiler doesn't know that
+		// the former only uses rock, paper, and scissors. It's protecting us
+		// here. From the crime of two mutable borrows
+		self.rock
+			.iter_mut()
+			.chain(self.paper.iter_mut())
+			.chain(self.scissors.iter_mut())
+			.for_each(|e| {
+				let jitter = 0.05;
+				e.position += Vec2::new(
+					self.revolve.range(-jitter, jitter),
+					self.revolve.range(-jitter, jitter),
+				)
+			});
 
 		self.foreach_entities_mut(|e| {
 			e.position += e.direction * Entity::SPEED * delta.as_secs_f32();
