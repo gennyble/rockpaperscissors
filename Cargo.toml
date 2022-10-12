@@ -1,12 +1,15 @@
 [package]
 name = "rockpaperscissors"
+authors = ["Genevieve Z <gen@nyble.dev>"]
+license-file = "LICENSE"
 version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
-[dependencies]
-smitten = { path = "../smitten" }
+[dependencies.smitten]
+git = "https://github.com/gennyble/smitten"
+branch = "rps"
 
 [dependencies.rand]
 version = "0.8.5"
