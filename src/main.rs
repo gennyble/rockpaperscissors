@@ -162,8 +162,21 @@ impl World {
 				None => break,
 			};
 
+			// Entity-Entity collision
 			for th in self.things.iter_mut() {
 				Self::collide_entities(&mut thing, th)
+			}
+
+			// Chasing
+			let closest = Self::closest_of_kind(
+				&thing,
+				&mut self.things.iter().chain(seen.iter()),
+				thing.kind.beats(),
+			);
+
+			if let Some(close) = closest {
+				let direction = (thing.position - close.position).normalize();
+				thing.direction = direction * -1.0;
 			}
 
 			seen.push(thing);
@@ -192,6 +205,27 @@ impl World {
 			}
 		}
 	}
+
+	fn closest_of_kind<'a, I>(us: &Entity, iter: &mut I, kind: Kind) -> Option<&'a Entity>
+	where
+		I: Iterator<Item = &'a Entity>,
+	{
+		let mut entity = None;
+		let mut distance = f32::MAX;
+
+		iter.for_each(|ent| {
+			if ent.kind == kind {
+				let dist = us.position.distance_with(ent.position);
+
+				if dist < distance {
+					distance = dist;
+					entity = Some(ent);
+				}
+			}
+		});
+
+		entity
+	}
 }
 
 type EntityId = usize;
@@ -213,8 +247,27 @@ impl Entity {
 	}
 }
 
+#[derive(Debug, PartialEq)]
 enum Kind {
 	Rock,
 	Paper,
 	Scissors,
+}
+
+impl Kind {
+	pub fn beats(&self) -> Self {
+		match self {
+			Kind::Rock => Kind::Scissors,
+			Kind::Paper => Kind::Rock,
+			Kind::Scissors => Kind::Paper,
+		}
+	}
+
+	pub fn beaten_by(&self) -> Self {
+		match self {
+			Kind::Rock => Kind::Paper,
+			Kind::Paper => Kind::Scissors,
+			Kind::Scissors => Kind::Rock,
+		}
+	}
 }
