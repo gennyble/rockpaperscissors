@@ -19,6 +19,11 @@ fn main() {
 
 	loop {
 		world.tick();
+
+		if world.done {
+			break;
+		}
+
 		world.draw();
 	}
 }
@@ -30,6 +35,7 @@ struct World {
 	revolve: RevolvingRandom,
 	/// homoogeneous
 	homo: bool,
+	done: bool,
 }
 
 impl World {
@@ -70,11 +76,16 @@ impl World {
 			earlier: None,
 			revolve: RevolvingRandom::new(),
 			homo: false,
+			done: false,
 		}
 	}
 
 	pub fn tick(&mut self) {
 		let _events = self.smitten.events();
+
+		if self.done {
+			return;
+		}
 
 		// We can't
 		let delta = match self.earlier {
@@ -106,6 +117,12 @@ impl World {
 		if !self.homo {
 			self.collide_walls();
 			self.tick_entities(delta);
+		} else {
+			self.kill_offscreen_things();
+
+			if self.things.len() == 0 {
+				self.done = true;
+			}
 		}
 	}
 
@@ -253,6 +270,25 @@ impl World {
 		});
 
 		entity
+	}
+
+	fn kill_offscreen_things(&mut self) {
+		let murs = (self.smitten.screen_murs() + Self::ENTITY_DIM) / 2.0;
+
+		let count_before = self.things.len();
+		self.things.retain(|e| {
+			let pos = e.position;
+
+			pos.x < murs.x && pos.x > -murs.x && pos.y < murs.y && pos.y > -murs.y
+		});
+
+		if self.things.len() != count_before {
+			let count = self.things.len();
+			let difference = count_before - count;
+			let maybeplural = if difference == 1 { "thing" } else { "things" };
+
+			println!("Killed {difference} {maybeplural} for being off screen, {count} remain");
+		}
 	}
 }
 
