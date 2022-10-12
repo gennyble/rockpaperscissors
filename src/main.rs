@@ -1,6 +1,9 @@
 mod revolvingrandom;
 
-use std::time::{Duration, Instant};
+use std::{
+	mem::MaybeUninit,
+	time::{Duration, Instant},
+};
 
 use rand::{thread_rng, Rng};
 use smitten::{self, Color, Smitten, Vec2};
@@ -25,6 +28,8 @@ struct World {
 	things: Vec<Entity>,
 	earlier: Option<Instant>,
 	revolve: RevolvingRandom,
+	/// homoogeneous
+	homo: bool,
 }
 
 impl World {
@@ -64,6 +69,7 @@ impl World {
 			things,
 			earlier: None,
 			revolve: RevolvingRandom::new(),
+			homo: false,
 		}
 	}
 
@@ -84,8 +90,23 @@ impl World {
 			}
 		};
 
-		self.collide_walls();
-		self.tick_entities(delta);
+		self.things.iter_mut().for_each(|e| {
+			e.position += e.direction * Entity::SPEED * delta.as_secs_f32();
+		});
+
+		// do some jiggle 🥺
+		self.things.iter_mut().for_each(|e| {
+			let jitter = 0.05;
+			e.position += Vec2::new(
+				self.revolve.range(-jitter, jitter),
+				self.revolve.range(-jitter, jitter),
+			)
+		});
+
+		if !self.homo {
+			self.collide_walls();
+			self.tick_entities(delta);
+		}
 	}
 
 	const ENTITY_DIM: Vec2 = Vec2 { x: 1.0, y: 1.0 };
@@ -139,19 +160,8 @@ impl World {
 	}
 
 	fn tick_entities(&mut self, delta: Duration) {
-		// First things first, we gotta move these things
-		self.things.iter_mut().for_each(|e| {
-			e.position += e.direction * Entity::SPEED * delta.as_secs_f32();
-		});
-
-		// Second, do some jiggle 🥺
-		self.things.iter_mut().for_each(|e| {
-			let jitter = 0.05;
-			e.position += Vec2::new(
-				self.revolve.range(-jitter, jitter),
-				self.revolve.range(-jitter, jitter),
-			)
-		});
+		let mut did_collide = false;
+		let mut last_kind = Kind::Paper;
 
 		// We can't mutate two things at once, so we do this stuff
 		let mut seen = vec![];
@@ -163,7 +173,9 @@ impl World {
 
 			// Entity-Entity collision
 			for th in self.things.iter_mut() {
-				Self::collide_entities(&mut thing, th)
+				if Self::collide_entities(&mut thing, th) {
+					did_collide = true;
+				}
 			}
 
 			// Chasing
@@ -178,12 +190,25 @@ impl World {
 				thing.direction = direction * -1.0;
 			}
 
+			last_kind = thing.kind;
 			seen.push(thing);
 		}
 		self.things = seen;
+
+		// Only do the check if there was a collision, which is the only way kinds can change
+		if did_collide {
+			let homo = self.things.iter().all(|e| e.kind == last_kind);
+
+			if homo && !self.homo {
+				self.homo = homo;
+				self.things
+					.iter_mut()
+					.for_each(|e| e.direction = e.direction * -1.0);
+			}
+		}
 	}
 
-	fn collide_entities(a: &mut Entity, b: &mut Entity) {
+	fn collide_entities(a: &mut Entity, b: &mut Entity) -> bool {
 		if a.collides_with(b) {
 			match a.kind {
 				Kind::Rock => match b.kind {
@@ -202,7 +227,11 @@ impl World {
 					Kind::Scissors => (),
 				},
 			}
+
+			return true;
 		}
+
+		false
 	}
 
 	fn closest_of_kind<'a, I>(us: &Entity, iter: &mut I, kind: Kind) -> Option<&'a Entity>
@@ -243,7 +272,7 @@ impl Entity {
 	}
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 enum Kind {
 	Rock,
 	Paper,
