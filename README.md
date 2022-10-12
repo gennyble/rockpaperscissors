@@ -1,6 +1,8 @@
 # RockPaperScissors
 An implementation of <https://twitter.com/HBeckPDX/status/1579873420463857664> because I think a chain of three would be neat.
 
+Maybe, see <https://www.ncbi.nlm.nih.gov/pmc/articles/PMC1088744/pdf/PB011323.pdf>
+
 # Building
 You need resvg ([crates.io][resvg-crates]|[github][resvg-github]) and just ([crates.io][just-crates]|[github][just-github]) and then you can do:
 
