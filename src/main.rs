@@ -239,7 +239,7 @@ struct Entity {
 }
 
 impl Entity {
-	const SPEED: f32 = 2.0;
+	const SPEED: f32 = 1.5;
 
 	pub fn collides_with(&self, other: &Entity) -> bool {
 		//gen- Why is this not ENTITY_DIM.x * 2?
