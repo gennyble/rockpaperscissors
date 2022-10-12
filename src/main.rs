@@ -37,12 +37,12 @@ impl World {
 				Self::random_position(&smitten).normalize(),
 			)
 		})
-		.take(50)
+		.take(100)
 		.collect();
 
 		let mut things = vec![];
 
-		for (id, (position, direction)) in positions_directions.into_iter().enumerate() {
+		for (_id, (position, direction)) in positions_directions.into_iter().enumerate() {
 			let kind_idx = thread_rng().gen_range(0..3);
 
 			let kind = match kind_idx {
@@ -53,7 +53,6 @@ impl World {
 			};
 
 			things.push(Entity {
-				id,
 				kind,
 				position,
 				direction,
@@ -228,10 +227,7 @@ impl World {
 	}
 }
 
-type EntityId = usize;
-
 struct Entity {
-	id: EntityId,
 	kind: Kind,
 	position: Vec2,
 	/// Movement direction. Where is it going?
@@ -263,6 +259,7 @@ impl Kind {
 		}
 	}
 
+	#[allow(dead_code)]
 	pub fn beaten_by(&self) -> Self {
 		match self {
 			Kind::Rock => Kind::Paper,
