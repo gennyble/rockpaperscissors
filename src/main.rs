@@ -1,18 +1,11 @@
 mod revolvingrandom;
 
-use std::{
-	mem::MaybeUninit,
-	time::{Duration, Instant},
-};
+use std::time::{Duration, Instant};
 
 use rand::{thread_rng, Rng};
-use smitten::{self, Color, Smitten, TextureId, Vec2};
+use smitten::{self, Smitten, TextureId, Vec2};
 
 use revolvingrandom::RevolvingRandom;
-
-const ROCK_COLOR: Color = Color::grey(0.5);
-const PAPER_COLOR: Color = Color::rgb(0.7, 0.7, 0.4);
-const SCISSORS_COLOR: Color = Color::rgb(0.8, 0.3, 0.3);
 
 fn main() {
 	let mut world = World::new();
@@ -187,7 +180,7 @@ impl World {
 		})
 	}
 
-	fn tick_entities(&mut self, delta: Duration) {
+	fn tick_entities(&mut self, _delta: Duration) {
 		let mut did_collide = false;
 		let mut last_kind = Kind::Paper;
 
