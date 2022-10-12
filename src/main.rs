@@ -37,7 +37,7 @@ struct World {
 
 impl World {
 	pub fn new() -> Self {
-		let mut smitten = Smitten::new((1280, 960), "Rock Paper Scissors", 24);
+		let mut smitten = Smitten::new((720, 720), "Rock Paper Scissors", 24);
 
 		let positions_directions: Vec<(Vec2, Vec2)> = std::iter::repeat_with(|| {
 			(
