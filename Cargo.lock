@@ -948,7 +948,6 @@ dependencies = [
 [[package]]
 name = "smitten"
 version = "0.1.0"
-source = "git+https://github.com/gennyble/smitten?branch=rps#bc990fd5d1929e0bc8eebd4623e6c377eb01fa2d"
 dependencies = [
  "glow",
  "glutin",

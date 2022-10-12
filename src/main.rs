@@ -37,20 +37,15 @@ struct World {
 
 impl World {
 	pub fn new() -> Self {
-		let mut smitten = Smitten::new((1280, 960), "Rock Paper Scissors", 24);
+		let mut smitten = Smitten::new((640, 640), "Rock Paper Scissors", 36);
 
-		let positions_directions: Vec<(Vec2, Vec2)> = std::iter::repeat_with(|| {
-			(
-				Self::random_position(&smitten),
-				Self::random_position(&smitten).normalize(),
-			)
-		})
-		.take(100)
-		.collect();
+		let positions: Vec<Vec2> = std::iter::repeat_with(|| Self::random_position(&smitten))
+			.take(50)
+			.collect();
 
 		let mut things = vec![];
 
-		for (_id, (position, direction)) in positions_directions.into_iter().enumerate() {
+		for (_id, position) in positions.into_iter().enumerate() {
 			let kind_idx = thread_rng().gen_range(0..3);
 
 			let kind = match kind_idx {
@@ -63,7 +58,7 @@ impl World {
 			things.push(Entity {
 				kind,
 				position,
-				direction,
+				velocity: Vec2::ZERO,
 			})
 		}
 
@@ -106,12 +101,12 @@ impl World {
 		};
 
 		self.things.iter_mut().for_each(|e| {
-			e.position += e.direction * Entity::SPEED * delta.as_secs_f32();
+			e.position += e.velocity * delta.as_secs_f32();
 		});
 
 		// do some jiggle 🥺
 		self.things.iter_mut().for_each(|e| {
-			let jitter = 0.05;
+			let jitter = 0.025;
 			e.position += Vec2::new(
 				self.revolve.range(-jitter, jitter),
 				self.revolve.range(-jitter, jitter),
@@ -164,18 +159,18 @@ impl World {
 		self.things.iter_mut().for_each(|ent| {
 			if ent.position.x + entdim > walls.x {
 				ent.position.x = walls.x - entdim;
-				ent.direction.x *= -1.0;
+				ent.velocity.x *= -1.0;
 			} else if ent.position.x - entdim < -walls.x {
 				ent.position.x = -walls.x + entdim;
-				ent.direction.x *= -1.0;
+				ent.velocity.x *= -1.0;
 			}
 
 			if ent.position.y + entdim > walls.y {
 				ent.position.y = walls.y - entdim;
-				ent.direction.y *= -1.0;
+				ent.velocity.y *= -1.0;
 			} else if ent.position.y - entdim < -walls.y {
 				ent.position.y = -walls.y + entdim;
-				ent.direction.y *= -1.0;
+				ent.velocity.y *= -1.0;
 			}
 		})
 	}
@@ -199,17 +194,7 @@ impl World {
 				}
 			}
 
-			// Chasing
-			let closest = Self::closest_of_kind(
-				&thing,
-				&mut self.things.iter().chain(seen.iter()),
-				thing.kind.beats(),
-			);
-
-			if let Some(close) = closest {
-				let direction = (thing.position - close.position).normalize();
-				thing.direction = direction * -1.0;
-			}
+			Self::thing_forces(&mut thing, &mut self.things.iter().chain(seen.iter()));
 
 			last_kind = thing.kind;
 			seen.push(thing);
@@ -224,7 +209,7 @@ impl World {
 				self.homo = homo;
 				self.things
 					.iter_mut()
-					.for_each(|e| e.direction = e.direction * -1.0);
+					.for_each(|e| e.velocity = e.velocity * -1.0);
 			}
 		}
 	}
@@ -255,25 +240,24 @@ impl World {
 		false
 	}
 
-	fn closest_of_kind<'a, I>(us: &Entity, iter: &mut I, kind: Kind) -> Option<&'a Entity>
+	fn thing_forces<'a, I>(us: &mut Entity, iter: &mut I)
 	where
 		I: Iterator<Item = &'a Entity>,
 	{
-		let mut entity = None;
-		let mut distance = f32::MAX;
-
+		//us.velocity = Vec2::ZERO;
+		let mut force_vec = Vec2::ZERO;
 		iter.for_each(|ent| {
-			if ent.kind == kind {
-				let dist = us.position.distance_with(ent.position);
-
-				if dist < distance {
-					distance = dist;
-					entity = Some(ent);
-				}
-			}
+			let direction = us.position - ent.position;
+			let distance = us.position.distance_with(ent.position).sqrt();
+			let force = direction * -1.0 * us.kind.force_from(ent.kind) * distance;
+			force_vec += force;
 		});
+		us.velocity += force_vec.normalize() * 0.5;
 
-		entity
+		let forcemax = 1.5;
+		if us.velocity.length() > forcemax {
+			us.velocity = us.velocity.normalize() * forcemax;
+		}
 	}
 
 	fn kill_offscreen_things(&mut self) {
@@ -300,12 +284,10 @@ struct Entity {
 	kind: Kind,
 	position: Vec2,
 	/// Movement direction. Where is it going?
-	direction: Vec2,
+	velocity: Vec2,
 }
 
 impl Entity {
-	const SPEED: f32 = 1.5;
-
 	pub fn collides_with(&self, other: &Entity) -> bool {
 		//gen- Why is this not ENTITY_DIM.x * 2?
 		self.position.distance_with(other.position) < World::ENTITY_DIM.x
@@ -328,12 +310,21 @@ impl Kind {
 		}
 	}
 
-	#[allow(dead_code)]
 	pub fn beaten_by(&self) -> Self {
 		match self {
 			Kind::Rock => Kind::Paper,
 			Kind::Paper => Kind::Scissors,
 			Kind::Scissors => Kind::Rock,
+		}
+	}
+
+	pub fn force_from(&self, other: Self) -> f32 {
+		if self.beats() == other {
+			10.0
+		} else if self.beaten_by() == other {
+			-10.0
+		} else {
+			-0.1
 		}
 	}
 }

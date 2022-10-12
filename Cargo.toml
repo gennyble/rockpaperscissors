@@ -8,8 +8,10 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies.smitten]
-git = "https://github.com/gennyble/smitten"
-branch = "rps"
+#git = "https://github.com/gennyble/smitten"
+#branch = "rps"
+#revision = "c194e0b"
+path = "../smitten"
 
 [dependencies.rand]
 version = "0.8.5"
