@@ -6,7 +6,7 @@ use std::{
 };
 
 use rand::{thread_rng, Rng};
-use smitten::{self, Color, Smitten, Vec2};
+use smitten::{self, Color, Smitten, TextureId, Vec2};
 
 use revolvingrandom::RevolvingRandom;
 
@@ -36,11 +36,15 @@ struct World {
 	/// homoogeneous
 	homo: bool,
 	done: bool,
+
+	rock: TextureId,
+	paper: TextureId,
+	scissors: TextureId,
 }
 
 impl World {
 	pub fn new() -> Self {
-		let smitten = Smitten::new((1280, 960), "Rock Paper Scissors", 24);
+		let mut smitten = Smitten::new((1280, 960), "Rock Paper Scissors", 24);
 
 		let positions_directions: Vec<(Vec2, Vec2)> = std::iter::repeat_with(|| {
 			(
@@ -70,6 +74,10 @@ impl World {
 			})
 		}
 
+		let rock = smitten.make_texture("assets/rock.png");
+		let paper = smitten.make_texture("assets/paper.png");
+		let scissors = smitten.make_texture("assets/scissors.png");
+
 		Self {
 			smitten,
 			things,
@@ -77,6 +85,9 @@ impl World {
 			revolve: RevolvingRandom::new(),
 			homo: false,
 			done: false,
+			rock,
+			paper,
+			scissors,
 		}
 	}
 
@@ -133,9 +144,9 @@ impl World {
 
 		self.things.iter().for_each(|ent| {
 			let draw = match ent.kind {
-				Kind::Rock => ROCK_COLOR,
-				Kind::Paper => PAPER_COLOR,
-				Kind::Scissors => SCISSORS_COLOR,
+				Kind::Rock => self.rock,
+				Kind::Paper => self.paper,
+				Kind::Scissors => self.scissors,
 			};
 
 			self.smitten.rect(ent.position, Self::ENTITY_DIM, draw)
