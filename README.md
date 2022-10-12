@@ -16,4 +16,4 @@ just make-assets
 # License
 The SVG under `/assets` are "Copyright 2019 Twitter, Inc and other contributors" and under CC-BY 4.0. <https://github.com/twitter/twemoji>
 
-The code here is licensed under the ACSL. It's not open source. Read the license for details if you really care.
+The code here is licensed under CC0 1.0; It's in the public domain.
