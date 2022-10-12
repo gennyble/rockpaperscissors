@@ -2,7 +2,11 @@
 An implementation of <https://twitter.com/HBeckPDX/status/1579873420463857664> because I think a chain of three would be neat.
 
 # Building
-You need resvg ([crates.io][resvg-crates]|[github][resvg-github]) and just ([crates.io][just-crates]|[github][just-github])
+You need resvg ([crates.io][resvg-crates]|[github][resvg-github]) and just ([crates.io][just-crates]|[github][just-github]) and then you can do:
+
+```
+just make-assets
+```
 
 [resvg-crates]: https://crates.io/crates/resvg
 [resvg-github]: https://github.com/RazrFalcon/resvg
